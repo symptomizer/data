@@ -3,3 +3,10 @@ type = "webpack"
 webpack_config = "webpack.config.js"
 account_id = "5a883b414d4090a1442b20361f3c43a9"
 workers_dev = true
+
+kv_namespaces = [
+    { binding = "EVIDENCE", id = "2c00e2194a954021a9ccd0513655b2c0", preview_id = "4fb64fe9cfb94a6eb97d65700e8d1fff" }
+]
+
+[triggers]
+crons = ["* * * * *"]
