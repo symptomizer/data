@@ -4,7 +4,7 @@ import { ONE_HOUR, ONE_WEEK } from "./constants";
 const NUMBER_OF_REMAINING_DOCUMENTS_KEY = "NUMBER_OF_REMAINING_DOCUMENTS";
 const NUMBER_OF_DOCUMENTS_KEY = "NUMBER_OF_DOCUMENTS";
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1000;
 
 type Document = {
   Url: string;
