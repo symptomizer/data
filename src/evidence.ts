@@ -4,7 +4,7 @@ import { ONE_HOUR, ONE_WEEK } from "./constants";
 const NUMBER_OF_REMAINING_DOCUMENTS_KEY = "NUMBER_OF_REMAINING_DOCUMENTS";
 const NUMBER_OF_DOCUMENTS_KEY = "NUMBER_OF_DOCUMENTS";
 
-const BATCH_SIZE = 500;
+const BATCH_SIZE = 100;
 
 type Document = {
   Url: string;
@@ -106,6 +106,8 @@ export const handleDocumentRequest = async (
   request: Request
 ): Promise<Response> => {
   const documentURL = request.url.split("/evidence/")[1];
+  if (!documentURL) return new Response(null, { status: 404 });
+
   const document = await EVIDENCE.get(`document:${documentURL}`, "json");
   const documentResponse = await fetch(documentURL, {
     cf: { cacheEverything: true, cacheTtl: ONE_WEEK },
