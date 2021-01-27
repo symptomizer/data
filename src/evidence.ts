@@ -120,7 +120,9 @@ export const handleDocumentRequest = async (
   return documentResponse;
 };
 
-export const handleRequest = async (request: Request): Promise<Response> => {
+export const handleStatsRequest = async (
+  request: Request
+): Promise<Response> => {
   const numberOfDocuments = await getNumberOfDocuments();
   const cachedNumberOfDocuments = +(
     (await EVIDENCE.get(NUMBER_OF_DOCUMENTS_KEY)) || "0"
@@ -137,4 +139,11 @@ export const handleRequest = async (request: Request): Promise<Response> => {
     }),
     { headers: { "Content-Type": "application/json" } }
   );
+};
+
+export const handleTriggerRequest = async (
+  request: Request
+): Promise<Response> => {
+  await handleSchedule();
+  return new Response("OK");
 };
