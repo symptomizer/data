@@ -31,3 +31,7 @@ A request to `/nhs/<PATH>` is proxied to `https://api.nhs.uk/<PATH>`.
 ### MedicinesComplete
 
 A request to `/medicinesComplete/<PATH>` is proxied to `https://www.medicinescomplete.com/api/<PATH>`.
+
+### WHO IRIS
+
+A request to `/who/<DOCID>` returns the PDF document from `https://apps.who.int/iris/handle/<DOCID>`.
