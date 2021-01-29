@@ -1,6 +1,24 @@
 import { ONE_WEEK } from "./constants";
 
-const PDF_URL_REGEX = /<meta content="(.*)" name="citation_pdf_url">/gm;
+class CitationPDFURLElementHandler {
+  pdfURL?: string;
+
+  element(element: Element) {
+    this.pdfURL = element.getAttribute("content") || undefined;
+  }
+}
+
+const extractPDFURL = async (response: Response) => {
+  const elementHandler = new CitationPDFURLElementHandler();
+  const htmlRewriter = new HTMLRewriter().on(
+    'meta[name="citation_pdf_url"]',
+    elementHandler
+  );
+
+  await htmlRewriter.transform(response).text();
+
+  return elementHandler.pdfURL;
+};
 
 export const handleRequest = async (request: Request): Promise<Response> => {
   const documentPageURL = new URL(request.url);
@@ -15,15 +33,12 @@ export const handleRequest = async (request: Request): Promise<Response> => {
     },
   });
 
-  const documentPageHTML = await documentPage.text();
-  const match = PDF_URL_REGEX.exec(documentPageHTML);
+  const documentPDFURL = await extractPDFURL(documentPage);
 
-  if (match === null) {
-    return new Response(null, { status: 404 });
-  } else {
-    const documentPDFURL = match[1];
+  if (documentPDFURL)
     return fetch(documentPDFURL, {
       cf: { cacheEverything: true, cacheTtl: ONE_WEEK },
     });
-  }
+
+  return new Response(null, { status: 404 });
 };
