@@ -9,6 +9,9 @@ module.exports = {
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
     plugins: [],
+    alias: {
+      fs: path.resolve(__dirname, "./null.js"),
+    },
   },
   module: {
     rules: [

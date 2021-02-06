@@ -1,12 +1,25 @@
 import { Router } from "@glenstack/cf-workers-router";
-import { handleRequest as nhs } from "./nhs";
-import { handleRequest as medicinesComplete } from "./medicinesComplete";
-import { handleRequest as who } from "./who";
+import { DocumentSource } from "./sources";
+import { WHO } from "./sources/who";
+// import { handleRequest as who } from "./who";
+
+const getDocument = (source: DocumentSource) => async (request: Request) => {
+  const url = new URL(request.url);
+  const documentID = "https://apps.who.int/iris/handle/10665/339053";
+  try {
+    const document = await source.getDocument(documentID);
+    return new Response(JSON.stringify(document), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(e.message);
+  }
+};
 
 const router = new Router();
-router.get("/nhs/.*", nhs);
-router.get("/medicinesComplete/.*", medicinesComplete);
-router.get("/who/.*", who);
+// router.get("/nhs/.*", nhs);
+// router.get("/medicinesComplete/.*", medicinesComplete);
+router.get("/who/.*", getDocument(new WHO()));
 
 addEventListener("fetch", (event) => {
   event.respondWith(router.route(event.request));
