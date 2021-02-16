@@ -11,6 +11,8 @@
 # Icon must end with two \r
 Icon
 
+#ignore the NHS API KEY for security reasons
+NHS_API_KEY.txt
 
 # Thumbnails
 ._*
