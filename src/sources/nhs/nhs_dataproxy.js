@@ -234,7 +234,7 @@ class NHS extends DocumentSource{
 
     /****************** UPDATE DATA *****************/
 
-    UpdateData = async (category) => {
+    UpdateData = async => {
 
         // Get last retrieved date
         var last_retrieved = fs.readFileSync("lastRetrieved.txt", "utf-8");
@@ -361,7 +361,7 @@ class NHS extends DocumentSource{
                     };
 
                     itemsCollection.updateOne(query, update, options)
-                    
+
                     .then(result => {
                       const { matchedCount, modifiedCount, upsertedId } = result;
                       if(upsertedId) {
@@ -383,6 +383,8 @@ class NHS extends DocumentSource{
             console.log("Error fetching resource");
 
         }
+
+        setLastRetrieved()
 
     }
 }
