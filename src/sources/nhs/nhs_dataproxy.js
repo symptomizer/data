@@ -2,8 +2,60 @@
 const fetch = require('node-fetch');
 const {DocumentSource, Document, DocumentContent} = require("./tester");
 const {ONE_WEEK} = require('./constants');
-const fs = require('fs');
-const NHS_API_KEY = fs.readFileSync('NHS_API_KEY.txt');
+const key = require('key');
+const NHS_API_KEY = key.readFileSync('NHS_API_KEY.txt');
+
+const Realm = require("realm");
+const app = new Realm.App({ id: "documents-xjekh" });
+
+async function handleLogin() {
+  // Create a Credentials object to identify the user.
+  // Anonymous credentials don't have any identifying information, but other
+  // authentication providers accept additional data, like a user's email and
+  // password.
+  const credentials = Realm.Credentials.anonymous();
+  // You can log in with any set of credentials using `app.logIn()`
+  const user = await app.logIn(credentials);
+  console.log(`Logged in with the user id: ${user.id}`);
+};
+handleLogin().catch(err => {
+  console.error("Failed to log in:", err)
+});
+
+async function run() {
+    await app.logIn(new Realm.Credentials.anonymous());
+    // When you open a synced realm, the SDK automatically
+    // creates the realm on the device (if it didn't exist already) and
+    // syncs pending remote changes as well as any unsynced changes made
+    // to the realm on the device.
+    const realm = await Realm.open({
+      schema: [TaskSchema],
+      sync: {
+        user: app.currentUser,
+        partitionValue: "myPartition",
+      },
+    });
+    // The myPartition realm is now synced to the device. You can
+    // access it through the `realm` object returned by `Realm.open()`
+  }
+  run().catch(err => {
+    console.error("Failed to open realm:", err)
+  });
+
+// const MongoClient = require('mongodb').MongoClient;
+// const assert = require('assert');
+// const pw = require('pw')
+// const mongo_pw = pw.readFileSync('../mongo_pass.txt');
+
+// // Connection URL
+// const url = `mongodb+srv://main_admin:${mongo_pw}@cluster1.xo9vl.mongodb.net/document?retryWrites=true&w=majority`;
+
+// // Use connect method to connect to the Server
+// MongoClient.connect(url, function(err, client) {
+//   assert.equal(null, err);
+//   client.close();
+// });
+
 
 //"sleeper" function to pause calls after 10 calls in a row
 function sleep(ms){
