@@ -241,11 +241,10 @@ class NHS extends DocumentSource{
         // add related documents section
         try {
             let no_calls = 1;
-            let cat_docs = {};
-            // category = letter in alphabet
             //synonyms = true -> includes symptoms of the condition in search
             // includes child pages of a topic
-            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&startDate=' + last_retrieved + '&synonyms=true&childArticles=true&orderBy=dateModified';
+            // Retrieves all docs from the last saved date docs were retrieved
+            const nhs_url = 'https://api.nhs.uk/conditions/&startDate=' + last_retrieved + '&synonyms=true&childArticles=true&orderBy=dateModified';
             let response = await this.NHSFetch(nhs_url);
             let res = await response.json();
 
@@ -373,19 +372,14 @@ class NHS extends DocumentSource{
                     .catch(err => console.error(`Failed to upsert document: ${err}`))
                 }
             }
-            
-            // save the document to all_docs dictionary under category key
-            this.all_docs[category] = cat_docs;
 
-            // returns the initial NHS HEALTH A-Z call
-            return res;
+            console.log("Update completed")
+
         } catch {
             console.log("Error fetching resource");
 
         }
-
         setLastRetrieved()
-
     }
 }
 
