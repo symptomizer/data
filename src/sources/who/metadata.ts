@@ -24,7 +24,7 @@ const extractMetadataURL = async (
   );
   if (csvExportLinkHandler.metadataURL === null) throw new WHOMetadataError(id);
 
-  return new URL(csvExportLinkHandler.metadataURL);
+  // return new URL(csvExportLinkHandler.metadataURL);
 };
 
 export type Metadata = {
