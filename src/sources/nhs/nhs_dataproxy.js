@@ -5,6 +5,7 @@ const {ONE_WEEK} = require('./constants');
 const fs = require('fs');
 const NHS_API_KEY = fs.readFileSync('NHS_API_KEY.txt');
 const mongo_pass = fs.readFileSync('../mongo_pass.txt');
+const last_retrieved = fs.readFileSync("lastRetrieved.txt");
 
 const MongoClient = require('mongodb').MongoClient;
 const uri = `mongodb+srv://main_admin:${mongo_pass}@cluster1.xo9vl.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -45,13 +46,19 @@ class NHS extends DocumentSource{
     url = new URL("https://www.nhs.uk/conditions/");
     all_docs = {};
 
-    //figure out how to store A-Z ; look into how to cache
-
     // fetch function with headers and cache filled out
-    NHSFetch = async (url) => {
+    NHSFetch = async (url, category, last_retrieved) => {
         return await fetch(url, {
             headers: {
-                "subscription-key": NHS_API_KEY
+                "subscription-key": NHS_API_KEY,
+                "synonyms":"true",
+                "childArticles":"true",
+                // comment out category when updating + add comma
+                "category": category
+
+                //uncomment following when updating
+                //"startDate":last_retrieved,
+                //"orderBy":"dateModified"
             },
             cf: {
                 cacheEverything: true,
@@ -60,25 +67,17 @@ class NHS extends DocumentSource{
         })
     }
 
-    retrieveNHSData = async (category, update) => {
-        // add related documents section
-        // Get last retrieved date
-        var last_retrieved = fs.readFileSync("lastRetrieved.txt", "utf-8");
+    retrieveNHSData = async (category) => {
         try {
-
-            if(update===true){
-                const nhs_url = 'https://api.nhs.uk/conditions/&startDate=' + last_retrieved + '&synonyms=true&childArticles=true&orderBy=dateModified';
-            } else {
-                const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=true';
-            }
-
             let no_calls = 1;
             let cat_docs = {};
             // category = letter in alphabet
             //synonyms = true -> includes symptoms of the condition in search
             // includes child pages of a topic
             
-            let response = await this.NHSFetch(nhs_url);
+            const nhs_url = 'https://api.nhs.uk/conditions/'
+
+            let response = await this.NHSFetch(nhs_url, category);
             let res = await response.json();
 
             const results = res.significantLink;
@@ -211,7 +210,7 @@ class NHS extends DocumentSource{
 }
 let test = new NHS();
 
-test.retrieveNHSData('a', false).then((result) => {
+test.retrieveNHSData('a').then((result) => {
     console.log(result);
 });
 
