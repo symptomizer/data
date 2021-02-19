@@ -9,6 +9,7 @@
     "csv-parse": "4.15.1",
     "mongodb": "^3.6.3",
     "mongoose": "^5.11.15",
+    "node-fetch": "^2.6.1",
     "pdfjs-dist": "^2.6.347",
     "react": "^16.13.1",
     "react-native": "^0.63.2",
