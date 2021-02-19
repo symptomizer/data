@@ -30,7 +30,8 @@ function setLastRetrieved() {
     fs.writeFile('lastRetrieved.txt', date, (err) => { 
         // In case of a error throw err. 
         if (err) throw err; 
-    }) 
+    })
+    return date;
 }
 
 class NHS extends DocumentSource {
@@ -74,8 +75,11 @@ class NHS extends DocumentSource {
 
             const results = res.significantLink;
             const no_results = Object.keys(results).length;
+
+            //update date when last retrieved
+            // const last_retrieved = setLastRetrieved();
             try {
-                //connec to database
+                //connect to database
                 await client.connect();
                 const database = client.db("document");
                 const collection = database.collection("document");
@@ -96,7 +100,12 @@ class NHS extends DocumentSource {
                     schema.directURL = results[i].url;
                     schema.title = results[i].name;
                     schema.alternateTitle = mainEntity.alternateName;
-                    schema.authors = res.author;
+                    schema.authors = {
+                        url: res.author.url,
+                        name: res.author.name,
+                        email: res.author.email
+                    };
+                    schema.logo = res.author.logo;
                     if (mainEntity.lastReviewed !== undefined) {
                         schema.dateReviewed = mainEntity.lastReviewed[0];
                     }
@@ -145,6 +154,9 @@ class NHS extends DocumentSource {
                                         schema.imageURLs.push(image_dict);
                                         break;
                                     case "WebPageElement":
+                                        if ((page_items[k].name !== undefined) && page_items[k].name !== "markdown") {
+                                            DocumentContent.text.push(page_items[k].text);
+                                        }
                                         //saves normal text objects into array of strings
                                         DocumentContent.text.push(page_items[k].text);
                                 }
@@ -164,6 +176,7 @@ class NHS extends DocumentSource {
                                 "fileName": null,
                                 "authors": schema.authors,
                                 "datePublished": schema.datePublished,
+                                "dateIndexed": new Date(last_retrieved),
                                 "keywords": schema.keywords,
                                 "description": schema.description,
                                 "alternateDescription": null,
@@ -203,8 +216,8 @@ class NHS extends DocumentSource {
             } finally {
                 await client.close();
             }
-            // Update the date files were last retrieved
-            setLastRetrieved();
+            // // Update the date files were last retrieved
+            // setLastRetrieved();
         } catch (e) {
             console.log("Unable top fetch NHS Health A-Z API");
             console.error(e);

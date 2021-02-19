@@ -17,6 +17,7 @@ class Document {
         alternateTitle,
         fileName,
         authors,
+        logo,
         datePublished,
         dateReviewed,
         dateModified,
