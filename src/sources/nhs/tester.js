@@ -114,17 +114,4 @@ class DocumentSource{
 exports.DocumentContent = DocumentContent;
 exports.Document = Document;
 exports.DocumentSource = DocumentSource;
-//
-// class Test {
-//     constructor(car, id) {
-//         this.car = car;
-//         this.id = id;
-//     }
-// }
-//
-// let tester = new Test();
-// tester.car = "hi";
-// console.log(tester.car);
-// console.log(tester.id);
-// console.log("hi");
 

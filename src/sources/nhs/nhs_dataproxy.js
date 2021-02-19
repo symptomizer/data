@@ -2,8 +2,8 @@
 const fetch = require('node-fetch');
 const {DocumentSource, Document, DocumentContent} = require("./tester");
 const {ONE_WEEK} = require('./constants');
-const key = require('key');
-const NHS_API_KEY = key.readFileSync('NHS_API_KEY.txt');
+const fs = require('fs');
+const NHS_API_KEY = fs.readFileSync('NHS_API_KEY.txt');
 
 const Realm = require("realm");
 const app = new Realm.App({ id: "documents-xjekh" });
@@ -234,7 +234,7 @@ class NHS extends DocumentSource{
 
     /****************** UPDATE DATA *****************/
 
-    UpdateData = async => {
+    UpdateData = async (category) => {
 
         // Get last retrieved date
         var last_retrieved = fs.readFileSync("lastRetrieved.txt", "utf-8");
@@ -326,7 +326,6 @@ class NHS extends DocumentSource{
 
                 exports = function() {
                     const mongodb = context.services.get("mongodb-atlas");
-                    const mongodb = context.services.get("mongodb-atlas");
                     const documentsCollection = mongodb.db("document").collection("document");
 
                     const query = { "url": schema.url };
@@ -384,7 +383,7 @@ class NHS extends DocumentSource{
 }
 
 let test = new NHS();
-test.retrieveNHSData('A').then((result) => {
+test.retrieveNHSData('a').then((result) => {
     console.log(result);
 });
 console.log()
