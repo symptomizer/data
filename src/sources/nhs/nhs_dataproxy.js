@@ -31,7 +31,6 @@ function setLastRetrieved() {
         // In case of a error throw err. 
         if (err) throw err; 
     })
-    return date;
 }
 
 class NHS extends DocumentSource {
@@ -47,7 +46,7 @@ class NHS extends DocumentSource {
                 "subscription-key": NHS_API_KEY,
                 "synonyms": "true",
                 "childArticles": "true",
-                // comment out category when updating + add comma
+                // comment out following category when updating + add comma
                 // "category": category
 
                 //uncomment following when updating
@@ -76,8 +75,6 @@ class NHS extends DocumentSource {
             const results = res.significantLink;
             const no_results = Object.keys(results).length;
 
-            //update date when last retrieved
-            // const last_retrieved = setLastRetrieved();
             try {
                 //connect to database
                 await client.connect();
@@ -169,14 +166,14 @@ class NHS extends DocumentSource {
                         let updateFilter = { "directURL": schema.directURL};
                         let updateDoc = {
                             $set: {
-                                "url": schema.url,
-                                "directURL": schema.directURL,
+                                "url": schema.url.toString(),
+                                "directURL": schema.directURL.toString(),
                                 "title": schema.title,
                                 "alternateTitle": schema.alternateTitle,
                                 "fileName": null,
                                 "authors": schema.authors,
                                 "datePublished": schema.datePublished,
-                                "dateIndexed": new Date(last_retrieved),
+                                "dateIndexed": new Date().toISOString().slice(0, 10),
                                 "keywords": schema.keywords,
                                 "description": schema.description,
                                 "alternateDescription": null,
@@ -216,8 +213,8 @@ class NHS extends DocumentSource {
             } finally {
                 await client.close();
             }
-            // // Update the date files were last retrieved
-            // setLastRetrieved();
+            // Update the date files were last retrieved
+            setLastRetrieved();
         } catch (e) {
             console.log("Unable top fetch NHS Health A-Z API");
             console.error(e);
