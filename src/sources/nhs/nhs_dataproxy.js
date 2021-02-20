@@ -98,9 +98,9 @@ class NHS extends DocumentSource {
                     schema.title = results[i].name;
                     schema.alternateTitle = mainEntity.alternateName;
                     schema.authors = {
-                        url: res.author.url,
-                        name: res.author.name,
-                        email: res.author.email
+                        url: res.author.url.toString(),
+                        name: res.author.name.toString(),
+                        email: res.author.email.toString()
                     };
                     schema.logo = res.author.logo;
                     if (mainEntity.lastReviewed !== undefined) {
@@ -169,12 +169,12 @@ class NHS extends DocumentSource {
                                 "url": schema.url.toString(),
                                 "directURL": schema.directURL.toString(),
                                 "title": schema.title,
-                                "alternateTitle": schema.alternateTitle,
-                                "authors": schema.authors,
+                                "alternateTitle": schema.alternateTitle, // currently showing as null in all instances
+                                "authors": schema.authors, // currently showing as null in all instances
                                 "datePublished": new Date(schema.datePublished),
                                 "dateIndexed": new Date(),
                                 "keywords": schema.keywords,
-                                "description": schema.description,
+                                "description": schema.description, // currently showing as null in all instances
                                 "imageURLs": schema.imageURLs,
                                 "rights": schema.rights,
                                 "content": {id: DocumentContent.id, url: DocumentContent.url, text: DocumentContent.text },
