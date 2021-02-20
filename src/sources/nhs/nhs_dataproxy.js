@@ -99,7 +99,7 @@ class NHS extends DocumentSource {
                     schema.alternateTitle = mainEntity.alternateName;
                     schema.authors = {
                         url: res.author.url.toString(),
-                        name: res.author.name.toString(),
+                        name: res.author.name,
                         email: res.author.email.toString()
                     };
                     schema.logo = res.author.logo;
@@ -170,7 +170,7 @@ class NHS extends DocumentSource {
                                 "directURL": schema.directURL.toString(),
                                 "title": schema.title,
                                 "alternateTitle": schema.alternateTitle, // currently showing as null in all instances
-                                "authors": schema.authors, // currently showing as null in all instances
+                                "authors": [schema.authors],
                                 "datePublished": new Date(schema.datePublished),
                                 "dateIndexed": new Date(),
                                 "keywords": schema.keywords,
