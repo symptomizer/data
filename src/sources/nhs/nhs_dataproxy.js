@@ -38,7 +38,6 @@ class NHS extends DocumentSource {
     name = "NHS A-Z";
     description = 'The NHS Health A-Z';
     url = new URL("https://www.nhs.uk/conditions/");
-
     // fetch function with headers and cache filled out
     NHSFetch = async (url, category, last_retrieved) => {
         return await fetch(url, {
@@ -63,9 +62,6 @@ class NHS extends DocumentSource {
     retrieveNHSData = async (category) => {
         try {
             let no_calls = 1;
-            // category = letter in alphabet
-            //synonyms = true -> includes symptoms of the condition in search
-            // includes child pages of a topic
 
             const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=true';
 
@@ -88,81 +84,98 @@ class NHS extends DocumentSource {
                     console.log(`${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`);
                 }
 
-                // iterate through all the conditions for the category
-                for (let i = 0; i < no_results; i++) {
-                    let mainEntity = results[i].mainEntityOfPage;
-                    let schema = new Document();
-                    schema.id = this.id;
-                    schema.url = this.url;
-                    schema.directURL = results[i].url;
-                    schema.title = results[i].name;
-                    schema.alternateTitle = mainEntity.alternateName;
+                //function to get all schema data from all pages
+                let iterate_pages = async (json_res, schema) => {
                     schema.authors = {
-                        url: res.author.url.toString(),
-                        name: res.author.name,
-                        email: res.author.email.toString()
-                    };
-                    schema.logo = res.author.logo;
-                    if (mainEntity.lastReviewed !== undefined) {
-                        schema.dateReviewed = mainEntity.lastReviewed[0];
+                        url: json_res.author.url.toString(),
+                        name: json_res.author.name,
+                        email: json_res.author.email.toString()
                     }
-                    schema.dateModified = mainEntity.dateModified;
-                    schema.datePublished = mainEntity.datePublished;
+                    schema.rights = json_res.license;
+                    schema.directURL = json_res.url;
+                    schema.description = json_res.description;
+                    schema.title = json_res.name;
+                    schema.logo = json_res.author.logo;
                     schema.dateIndexed = new Date();
-                    schema.keywords = mainEntity.keywords;
-                    schema.description = mainEntity.description;
-                    schema.rights = res.license;
                     schema.source = "NHS Health A-Z";
+                    schema.dateModified = json_res.dateModified;
                     schema.imageURLs = [];
-                    const condition_url = results[i].url;
-                    try {
-                        // another call to get information for each condition
-                        no_calls += 1
-                        // sleep for a minute if 10 calls have been done in a row
-                        if (no_calls === 10) {
-                            no_calls = 0;
-                            const ONE_SECOND = 1000;
-                            const ONE_MINUTE = 60 * ONE_SECOND;
-                            await sleep(ONE_MINUTE);
+                    schema.relatedDocuments = [];
+                    if (schema.alternateTitle !== undefined) {
+                        schema.alternateTitle = json_res.about.alternateName;
+                    }
+
+                    // function to get all related link urls
+                    function allRelatedLinks(relatedLink) {
+                        const relatedLink_len = Object.keys(relatedLink).length;
+                        for (let i = 0; i < relatedLink_len; i++) {
+                            if (relatedLink[i].relatedLink === undefined) {
+                                schema.relatedDocuments.push(relatedLink[i]["url"]);
+                            } else {
+                                let new_relatedLink = relatedLink[i].relatedLink;
+                                allRelatedLinks(new_relatedLink);
+                            }
                         }
+                    }
 
-                        let condition_response = await this.NHSFetch(condition_url);
-                        let condition_res = await condition_response.json();
+                    //adds related links
+                    if (json_res.relatedLink !== undefined) {
+                        allRelatedLinks(json_res.relatedLink);
+                    }
 
-                        let condition_results = condition_res.mainEntityOfPage;
-                        let no_condition_results = Object.keys(condition_results).length;
+                    if (json_res["@type"] === "MedicalWebPage") {
+
+                        if (json_res.lastReviewed !== undefined) {
+                            schema.dateReviewed = json_res.lastReviewed[0];
+                        }
+                        if (schema.keywords !== undefined) {
+                            schema.keywords = json_res.keywords;
+                        }
                         DocumentContent.id = new ObjectID();
-                        DocumentContent.url = results[i].url;
-                        //Get text from main body of symptoms page
-                        for (let j = 0; j < no_condition_results; j++) {
-                            DocumentContent.text = [condition_results[j].text];
-                            let page_items = condition_results[j].mainEntityOfPage;
-                            let no_page_items = Object.keys(page_items).length;
-                            for (let k = 0; k < no_page_items; k++) {
-                                switch (page_items[k]["@type"]) {
-                                  // If it includes image saves image dictionary into schema
-                                    case "ImageObject":
-                                        let image_dict = {
-                                            url: page_items[k].url,
-                                            description: page_items[k].name,
-                                            provider: page_items[k].provider,
-                                            license: page_items[k].license
-                                        }
-                                        schema.imageURLs.push(image_dict);
-                                        break;
-                                    case "WebPageElement":
-                                        if ((page_items[k].name !== undefined) && page_items[k].name !== "markdown") {
-                                            DocumentContent.text.push(page_items[k].text);
-                                        }
-                                        //saves normal text objects into array of strings
-                                        DocumentContent.text.push(page_items[k].text);
+                        DocumentContent.url = json_res.url;
+                        DocumentContent.text = [];
+
+                        // gets all text from main entity of the page
+                        async function allText(mainEntity, DocumentContent) {
+                            const mainEntity_len = Object.keys(mainEntity).length;
+                            for (let i = 0; i < mainEntity_len; i++) {
+                                if (mainEntity[i].headline === undefined) {
+                                    switch (mainEntity[i]["@type"]) {
+                                      // If it includes image saves image dictionary into schema
+                                        case "ImageObject":
+                                            let image_dict = {
+                                                url: mainEntity[i].url,
+                                                description: mainEntity[i].name,
+                                                provider: mainEntity[i].provider,
+                                                license: mainEntity[i].license
+                                            }
+                                            schema.imageURLs.push(image_dict);
+                                            break;
+                                        case "WebPageElement":
+                                            if (mainEntity[i].name !== "markdown") {
+                                                DocumentContent.text.push(mainEntity[i].name);
+                                            }
+                                            let text = mainEntity[i].text;
+                                            DocumentContent.text.push(text);
+                                            break;
+                                    }
+                                } else {
+                                    if ((mainEntity[i].headline !== "") && (mainEntity[i].headline !== null)) {
+                                        DocumentContent.text.push(mainEntity[i].headline);
+                                    }
+                                    if ((mainEntity[i].text !== "") && (mainEntity[i].text !== null)) {
+                                        DocumentContent.text.push(mainEntity[i].text);
+                                    }
+                                    await allText(mainEntity[i].mainEntityOfPage, DocumentContent);
                                 }
                             }
                         }
-                        // adds DocumentContent to schema
-                        schema.document = DocumentContent;
-                        console.log(results[i].url + "\nsuccessfully fetched");
 
+                        await allText(json_res.mainEntityOfPage, DocumentContent);
+                        schema.document = DocumentContent;
+                        console.log(schema.directURL + "\nsuccessfully fetched");
+
+                        //add doc to schema
                         let updateFilter = { "directURL": schema.directURL};
                         let updateDoc = {
                             $set: {
@@ -187,27 +200,114 @@ class NHS extends DocumentSource {
                             }
                         }
 
-                        //update database with document
                         await update(updateFilter, updateDoc, options);
 
-                    } catch(e) {
-                        console.log(results[i].url + "\nError fetching resource");
+                    } else if (json_res["@type"] === "CollectionPage") {
+                        // iterate through all the link url in collection pages
+                        let allLinks = async (mainEntity) => {
+                            const mainEntity_len = Object.keys(mainEntity).length;
+                            for (let i = 0; i < mainEntity_len; i++) {
+                                if (mainEntity[i].url !== undefined) {
+                                    try {
+                                        no_calls += 1;
+                                        if (no_calls === 10) {
+                                            no_calls = 0;
+                                            const ONE_SECOND = 1000;
+                                            const ONE_MINUTE = 60 * ONE_SECOND;
+                                            await sleep(ONE_MINUTE);
+                                        }
+                                        let new_url = mainEntity[i].url;
+
+                                        let condition_response = await this.NHSFetch(new_url);
+                                        let condition_res = await condition_response.json();
+                                        let schema = new Document();
+                                        schema.id = this.id;
+                                        schema.url = this.url;
+                                        schema.directURL = new_url;
+                                        await iterate_pages(condition_res, schema);
+                                    } catch (e) {
+                                        console.log(new_url + "\nError fetching resource");
+                                        console.error(e);
+                                    }
+                                } else if (mainEntity[i].mainEntityOfPage["hasPart"] !== undefined) {
+                                    let hasPart = mainEntity[i].mainEntityOfPage["hasPart"];
+                                    let hasPart_len = Object.keys(hasPart).length;
+                                    for (let i = 0; i < hasPart_len; i++) {
+                                        if (hasPart.url !== undefined) {
+                                            schema.relatedDocuments.push(hasPart.url);
+                                        }
+                                    }
+                                } else {
+                                    try{
+                                        mainEntity = mainEntity[i].mainEntityOfPage;
+                                        await allLinks(mainEntity);
+
+                                    } catch (e) {
+                                        console.log(results[i].url + "\nError fetching resource");
+                                        console.error(e);
+                                    }
+
+                                }
+                            }
+                        }
+                        try{
+                            let mainEntity;
+                            if(json_res.mainEntityOfPage !== undefined){
+                                mainEntity = json_res.mainEntityOfPage;
+                            } else if (json_res.mainEntity !== undefined) {
+                                mainEntity = json_res.mainEntity;
+                            }
+                            await allLinks(mainEntity);
+                        } catch (e){
+                            console.log(results[i].url + "\nError fetching resource");
+                            console.error(e);
+                        }
+                    }
+
+                }
+
+                // iterate through all the conditions for the category
+                for (let i = 0; i < no_results; i++) {
+                    console.log(i.toString());
+                    let mainEntity = results[i].mainEntityOfPage;
+                    let schema = new Document();
+                    schema.id = this.id;
+                    schema.url = this.url;
+                    schema.datePublished = mainEntity.datePublished;
+                    let condition_url = results[i].url;
+                    try {
+                        // another call to get information for each condition
+                        no_calls += 1
+                        // sleep for a minute if 10 calls have been done in a row
+                        if (no_calls === 10) {
+                            no_calls = 0;
+                            const ONE_SECOND = 1000;
+                            const ONE_MINUTE = 60 * ONE_SECOND;
+                            await sleep(ONE_MINUTE);
+                        }
+
+                        let condition_response = await this.NHSFetch(condition_url);
+                        let condition_res = await condition_response.json();
+                        await iterate_pages(condition_res, schema);
+
+                    } catch (e) {
+                        console.log(condition_url + "\nError fetching resource");
                         console.error(e);
                     }
                 }
-            } catch (e) {
-                console.log("Unable to connect to MongoDB Database");
+                }catch (e) {
+                        console.log("Unable to connect to MongoDB Database");
+                        console.error(e);
+                    } finally {
+                        await client.close();
+                    }
+                    // Update the date files were last retrieved
+                    setLastRetrieved();
+                } catch (e) {
+                console.log("Unable top fetch NHS Health A-Z API");
                 console.error(e);
-            } finally {
-                await client.close();
             }
-            // Update the date files were last retrieved
-            setLastRetrieved();
-        } catch (e) {
-            console.log("Unable top fetch NHS Health A-Z API");
-            console.error(e);
         }
-    }
 }
 
 let test = new NHS();
@@ -215,5 +315,3 @@ let test = new NHS();
 test.retrieveNHSData('A').then((result) => {
     // console.log(result);
 });
-
-console.log()
