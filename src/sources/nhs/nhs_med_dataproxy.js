@@ -5,7 +5,7 @@ const {ONE_WEEK} = require('./constants');
 const fs = require('fs');
 const NHS_API_KEY = fs.readFileSync('NHS_API_KEY.txt');
 const mongo_pass = fs.readFileSync('../mongo_pass.txt');
-const last_retrieved = fs.readFileSync("lastRetrieved.txt");
+const last_retrieved = fs.readFileSync("lastRetrievedMed.txt");
 const ObjectID = require('bson').ObjectID;
 
 const MongoClient = require('mongodb').MongoClient;
@@ -27,24 +27,23 @@ function setLastRetrieved() {
 
     let date = yyyy + '-' + mm + '-' + dd;
 
-    fs.writeFile('lastRetrieved.txt', date, (err) => { 
+    fs.writeFile('lastRetrievedMed.txt', date, (err) => { 
         // In case of a error throw err. 
         if (err) throw err; 
     })
 }
 
-class NHS extends DocumentSource {
-    id = "nhs";
-    name = "NHS A-Z";
-    description = 'The NHS Health A-Z';
-    url = new URL("https://www.nhs.uk/conditions/");
+class NHS_MED extends DocumentSource {
+    id = "nhs_med";
+    name = "NHS Medicines";
+    description = 'The NHS Medicines A-Z';
+    url = new URL("https://www.nhs.uk/medicines/");
     // fetch function with headers and cache filled out
-    NHSFetch = async (url, category, last_retrieved) => {
+    NHSMedFetch = async (url, category, last_retrieved) => {
         return await fetch(url, {
             headers: {
                 "subscription-key": NHS_API_KEY,
-                "synonyms": "true",
-                "childArticles": "true",
+
                 //uncomment following when updating
                 //"startDate":last_retrieved,
                 //"orderBy":"dateModified"
@@ -60,9 +59,9 @@ class NHS extends DocumentSource {
         try {
             let no_calls = 1;
 
-            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=true';
+            const nhs_url = 'https://api.nhs.uk/medicines/?category=' + category;
 
-            let response = await this.NHSFetch(nhs_url, category, last_retrieved);
+            let response = await this.NHSMedFetch(nhs_url, category, last_retrieved);
             let res = await response.json();
 
             const results = res.significantLink;
@@ -94,7 +93,7 @@ class NHS extends DocumentSource {
                     schema.title = json_res.name;
                     schema.logo = json_res.author.logo;
                     schema.dateIndexed = new Date();
-                    schema.source = "NHS Health A-Z";
+                    schema.source = "NHS Medicines A-Z";
                     schema.dateModified = json_res.dateModified;
                     schema.imageURLs = [];
                     schema.relatedDocuments = [];
@@ -190,9 +189,9 @@ class NHS extends DocumentSource {
                                 "content": {id: DocumentContent.id, url: DocumentContent.url, text: DocumentContent.text },
                                 "type": "guidance",
                                 "source": {
-                                    id: "nhs_az",
-                                    name: "NHS Health A to Z",
-                                    description: "Complete guide to conditions, symptoms and treatments from the NHS (including what to do and when to get help)"
+                                    id: "nhs_med",
+                                    name: "NHS Medicines A to Z",
+                                    description: "NHS' guide to how your medicine works, how and when to take it, possible side effects and answers to your common questions."
                                 }
                             }
                         }
@@ -215,7 +214,7 @@ class NHS extends DocumentSource {
                                         }
                                         let new_url = mainEntity[i].url;
 
-                                        let condition_response = await this.NHSFetch(new_url);
+                                        let condition_response = await this.NHSMedFetch(new_url);
                                         let condition_res = await condition_response.json();
                                         let schema = new Document();
                                         schema.id = this.id;
@@ -283,7 +282,7 @@ class NHS extends DocumentSource {
                             await sleep(ONE_MINUTE);
                         }
 
-                        let condition_response = await this.NHSFetch(condition_url);
+                        let condition_response = await this.NHSMedFetch(condition_url);
                         let condition_res = await condition_response.json();
                         await iterate_pages(condition_res, schema);
 
@@ -307,7 +306,7 @@ class NHS extends DocumentSource {
         }
 }
 
-let test = new NHS();
+let test = new NHS_MED();
 
 test.retrieveNHSData('Z').then((result) => {
     console.log(`Category Z is complete`);
