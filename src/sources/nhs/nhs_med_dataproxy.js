@@ -148,12 +148,33 @@ class NHS_MED extends DocumentSource {
                                             schema.imageURLs.push(image_dict);
                                             break;
                                         case "WebPageElement":
-                                            if (mainEntity[i].name !== "markdown") {
+                                            if (mainEntity[i].name !== "markdown" && mainEntity[i].name !== "Reveal") {
                                                 DocumentContent.text.push(mainEntity[i].name);
                                             }
-                                            let text = mainEntity[i].text;
-                                            DocumentContent.text.push(text);
+
+                                            if (mainEntity[i].name !== "Reveal"){
+                                                let text = mainEntity[i].text;
+                                                DocumentContent.text.push(text);
+                                            } else {
+                                                let question = mainEntity[i]["subjectOf"];
+                                                DocumentContent.text.push("Question");
+                                                DocumentContent.text.push(question);
+
+                                                let answer = mainEntity[i]["mainEntity"][0]["text"]
+                                                DocumentContent.text.push("Answer");
+                                                DocumentContent.text.push(answer);
+                                            }
                                             break;
+                                        case "Question":
+                                            let question = mainEntity[i].text
+                                            DocumentContent.text.push("Question");
+                                            DocumentContent.text.push(question);
+
+                                            let answer = mainEntity[i]["acceptedAnswer"]["mainEntity"][0]["text"]
+                                            DocumentContent.text.push("Answer");
+                                            DocumentContent.text.push(answer);
+                                            break;
+                                            
                                     }
                                 } else {
                                     if ((mainEntity[i].headline !== "") && (mainEntity[i].headline !== null)) {
@@ -307,7 +328,7 @@ class NHS_MED extends DocumentSource {
 }
 
 let test = new NHS_MED();
-
-test.retrieveNHSData('Z').then((result) => {
-    console.log(`Category Z is complete`);
+console.log(`Starting category y`);
+test.retrieveNHSData('z').then((result) => {
+    console.log(`Category y is complete`);
 });

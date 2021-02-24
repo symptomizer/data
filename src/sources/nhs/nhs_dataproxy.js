@@ -83,11 +83,11 @@ class NHS extends DocumentSource {
 
                 //function to get all schema data from all pages
                 let iterate_pages = async (json_res, schema) => {
-                    schema.authors = {
+                    schema.authors = [{
                         url: json_res.author.url.toString(),
                         name: json_res.author.name,
                         email: json_res.author.email.toString()
-                    }
+                    }];
                     schema.rights = json_res.license;
                     schema.directURL = json_res.url;
                     schema.description = json_res.description;
@@ -149,11 +149,31 @@ class NHS extends DocumentSource {
                                             schema.imageURLs.push(image_dict);
                                             break;
                                         case "WebPageElement":
-                                            if (mainEntity[i].name !== "markdown") {
+                                            if (mainEntity[i].name !== "markdown" && mainEntity[i].name !== "Reveal") {
                                                 DocumentContent.text.push(mainEntity[i].name);
                                             }
-                                            let text = mainEntity[i].text;
-                                            DocumentContent.text.push(text);
+
+                                            if (mainEntity[i].name !== "Reveal"){
+                                                let text = mainEntity[i].text;
+                                                DocumentContent.text.push(text);
+                                            } else {
+                                                let question = mainEntity[i]["subjectOf"];
+                                                DocumentContent.text.push("Question");
+                                                DocumentContent.text.push(question);
+
+                                                let answer = mainEntity[i]["mainEntity"][0]["text"]
+                                                DocumentContent.text.push("Answer");
+                                                DocumentContent.text.push(answer);
+                                            }
+                                            break;
+                                        case "Question":
+                                            let question = mainEntity[i].text
+                                            DocumentContent.text.push("Question");
+                                            DocumentContent.text.push(question);
+
+                                            let answer = mainEntity[i]["acceptedAnswer"]["mainEntity"][0]["text"]
+                                            DocumentContent.text.push("Answer");
+                                            DocumentContent.text.push(answer);
                                             break;
                                     }
                                 } else {
@@ -180,7 +200,7 @@ class NHS extends DocumentSource {
                                 "directURL": schema.directURL.toString(),
                                 "title": schema.title,
                                 "alternateTitle": schema.alternateTitle,
-                                "authors": [schema.authors],
+                                "authors": schema.authors,
                                 "datePublished": new Date(schema.datePublished),
                                 "dateIndexed": new Date(),
                                 "keywords": schema.keywords,
@@ -309,6 +329,6 @@ class NHS extends DocumentSource {
 
 let test = new NHS();
 
-test.retrieveNHSData('Z').then((result) => {
-    console.log(`Category Z is complete`);
+test.retrieveNHSData('e').then((result) => {
+    console.log(`Category e is complete`);
 });
