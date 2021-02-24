@@ -1,6 +1,5 @@
-// import {DocumentSource, Document, DocumentContent} from "./tester";
 const fetch = require('node-fetch');
-const {DocumentSource, Document, DocumentContent} = require("./tester");
+const {DocumentSource, Document, DocumentContent} = require("../schema.js");
 const {ONE_WEEK} = require('./constants');
 const fs = require('fs');
 const NHS_API_KEY = fs.readFileSync('NHS_API_KEY.txt');
