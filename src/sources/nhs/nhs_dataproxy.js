@@ -153,7 +153,7 @@ class NHS extends DocumentSource {
                                                 DocumentContent.text.push(mainEntity[i].name);
                                             }
 
-                                            if (mainEntity[i].name !== "Reveal"){
+                                            if(mainEntity[i].name !== "Reveal"){
                                                 let text = mainEntity[i].text;
                                                 DocumentContent.text.push(text);
                                             } else {
@@ -329,6 +329,6 @@ class NHS extends DocumentSource {
 
 let test = new NHS();
 
-test.retrieveNHSData('e').then((result) => {
-    console.log(`Category e is complete`);
+test.retrieveNHSData('b').then((result) => {
+    console.log(`Category b is complete`);
 });
