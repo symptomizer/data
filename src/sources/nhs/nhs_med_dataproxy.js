@@ -105,7 +105,17 @@ class NHS_MED extends DocumentSource {
                         const relatedLink_len = Object.keys(relatedLink).length;
                         for (let i = 0; i < relatedLink_len; i++) {
                             if (relatedLink[i].relatedLink === undefined) {
-                                schema.relatedDocuments.push(relatedLink[i]["url"]);
+                                if(relatedLink[i]["name"] === json_res.name){
+                                    continue
+                                }
+                                var current_related_doc = new Object();
+                                current_related_doc["name"] = relatedLink[i]["name"]
+                                if(relatedLink[i]["url"].toString().charAt(0) === '/'){
+                                    current_related_doc["url"] = "https://api.nhs.uk".concat(relatedLink[i]["url"].toString())
+                                } else {
+                                    current_related_doc["url"] = relatedLink[i]["url"].toString()
+                                }
+                                schema.relatedDocuments.push(current_related_doc);
                             } else {
                                 let new_relatedLink = relatedLink[i].relatedLink;
                                 allRelatedLinks(new_relatedLink);
@@ -205,6 +215,7 @@ class NHS_MED extends DocumentSource {
                                 "keywords": schema.keywords,
                                 "description": schema.description,
                                 "imageURLs": schema.imageURLs,
+                                "relatedDocuments": schema.relatedDocuments,
                                 "rights": schema.rights,
                                 "content": {id: DocumentContent.id, url: DocumentContent.url, text: DocumentContent.text },
                                 "type": "guidance",
@@ -327,7 +338,6 @@ class NHS_MED extends DocumentSource {
 }
 
 let test = new NHS_MED();
-console.log(`Starting category y`);
 test.retrieveNHSData('z').then((result) => {
-    console.log(`Category y is complete`);
+    console.log(`Category z is complete`);
 });
