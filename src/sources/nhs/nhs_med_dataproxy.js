@@ -115,7 +115,9 @@ class NHS_MED extends DocumentSource {
                                 } else {
                                     current_related_doc["url"] = relatedLink[i]["url"].toString()
                                 }
-                                schema.relatedDocuments.push(current_related_doc);
+                                if(!schema.relatedDocuments.includes(current_related_doc)){
+                                    schema.relatedDocuments.push(current_related_doc);
+                                }
                             } else {
                                 let new_relatedLink = relatedLink[i].relatedLink;
                                 allRelatedLinks(new_relatedLink);

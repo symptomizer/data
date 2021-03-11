@@ -59,7 +59,7 @@ class NHS extends DocumentSource {
         try {
             let no_calls = 1;
 
-            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=true';
+            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=false';
 
             let response = await this.NHSFetch(nhs_url, category, last_retrieved);
             let res = await response.json();
@@ -106,7 +106,19 @@ class NHS extends DocumentSource {
                         const relatedLink_len = Object.keys(relatedLink).length;
                         for (let i = 0; i < relatedLink_len; i++) {
                             if (relatedLink[i].relatedLink === undefined) {
-                                schema.relatedDocuments.push(relatedLink[i]["url"]);
+                                if(relatedLink[i]["name"] === json_res.name){
+                                    continue
+                                }
+                                var current_related_doc = new Object();
+                                current_related_doc["name"] = relatedLink[i]["name"]
+                                if(relatedLink[i]["url"].toString().charAt(0) === '/'){
+                                    current_related_doc["url"] = "https://api.nhs.uk".concat(relatedLink[i]["url"].toString())
+                                } else {
+                                    current_related_doc["url"] = relatedLink[i]["url"].toString()
+                                }
+                                if(!schema.relatedDocuments.includes(current_related_doc)){
+                                    schema.relatedDocuments.push(current_related_doc);
+                                }
                             } else {
                                 let new_relatedLink = relatedLink[i].relatedLink;
                                 allRelatedLinks(new_relatedLink);
@@ -328,6 +340,6 @@ class NHS extends DocumentSource {
 
 let test = new NHS();
 
-test.retrieveNHSData('b').then((result) => {
-    console.log(`Category b is complete`);
+test.retrieveNHSData('v').then((result) => {
+    console.log(`Category v is complete`);
 });
