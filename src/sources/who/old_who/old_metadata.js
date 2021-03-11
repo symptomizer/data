@@ -1,12 +1,10 @@
 // import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
-const { WHOMetadataError } =require("./errors");
-const { csv } = require("../../../utils/csv");
 
-class CSVExportLinkHandler{
+class CSVExportLinkHandler {
   constructor() {
     this.metadataURL = null;
   }
-  element(element){
+  element(element) {
     this.metadataURL = element.getAttribute("href");
   }
 }
@@ -18,14 +16,18 @@ const extractMetadataURL = async (id, document) => {
     csvExportLinkHandler
   );
   await htmlRewriter.transform(document).text();
-  if (csvExportLinkHandler.metadataURL === null) {throw new WHOMetadataError(id);}
+  if (csvExportLinkHandler.metadataURL === null) {
+    throw new WHOMetadataError(id);
+  }
   return new URL(csvExportLinkHandler.metadataURL);
-}
+};
 
 const getMetadata = async (id, document) => {
   const metadataURL = await extractMetadataURL(id, document);
   const response = await fetch(metadataURL.toString());
   const metadata = csv(await response.text());
-  if(metadata.length !== 1) {throw new WHOMetadataError(id);}
+  if (metadata.length !== 1) {
+    throw new WHOMetadataError(id);
+  }
   return metadata[0];
-}
+};
