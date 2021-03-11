@@ -6,8 +6,9 @@ const pdfparse = require("pdf-parse");
 const fetch = require("node-fetch");
 const ObjectID = require("bson").ObjectID;
 const rp = require("request-promise");
+const utf8 = require("utf8");
 
-async function getMetadata(uri, schema) {
+async function getMetadata(uri, schema, updateDB) {
   const base_url = "https://apps.who.int";
   const options = {
     uri: base_url + uri,
@@ -38,14 +39,20 @@ async function getMetadata(uri, schema) {
     schema.url = uri;
     schema.directURL = csvURL;
     schema.title = metadata["Title"];
-    schema.authors = metadata["Authors"].split("||");
+    if (metadata["Authors"] !== undefined) {
+      schema.authors = metadata["Authors"].split("||");
+    }
     schema.alternateTitle = metadata["Variant title"];
     schema.datePublished = metadata["Date"];
     schema.dateReviewed = new Date(metadata.dc.date.accessioned);
     schema.dateIndexed = new Date();
-    schema.keywords = (metadata["Subject or keywords"] || "").split("||");
+    if (metadata["Subject or keywords"] !== undefined) {
+      schema.keywords = (metadata["Subject or keywords"] || "").split("||");
+    }
     schema.description = metadata.Abstract;
-    schema.alternateDescription = metadata.Description.split("||");
+    if (metadata.Description !== undefined) {
+      schema.alternateDescription = metadata.Description.split("||");
+    }
     schema.isbn = metadata.dc.identifier.isbn;
     schema.issn = metadata.dc.identifier.issn;
     schema.doi = metadata.dc.identifier.doi;
@@ -58,16 +65,25 @@ async function getMetadata(uri, schema) {
       start: metadata["Journal start page"],
       end: metadata["Journal end page"],
     };
-    schema.meshHeadings = (metadata["MeSH Headings"] || "")
-      .split("::")
-      .join("||")
-      .split("||");
-    schema.meshQualifiers = (metadata["MeSH qualifiers"] || "")
-      .split("::")
-      .join("||")
-      .split("||");
-    schema.publisher = metadata["Publisher"].split("||");
+    if (metadata["MeSH Headings"] !== undefined) {
+      schema.meshHeadings = (metadata["MeSH Headings"] || "")
+        .split("::")
+        .join("||")
+        .split("||");
+    }
+    if (metadata["MeSH qualifiers"] !== undefined) {
+      schema.meshQualifiers = (metadata["MeSH qualifiers"] || "")
+        .split("::")
+        .join("||")
+        .split("||");
+    }
+    if (metadata["Publisher"] !== undefined) {
+      schema.publisher = metadata["Publisher"].split("||");
+    }
     schema.rights = metadata["Rights"];
+    if (metadata["Language"] !== undefined) {
+      schema.language = metadata["Language"].split("||");
+    }
     schema.type = mapType();
   }
 
@@ -85,7 +101,7 @@ async function getMetadata(uri, schema) {
       const response = await fetch(full_pdfURL);
       const pdfFile = await response.arrayBuffer();
       const data = await pdfparse(pdfFile);
-      DocumentContent.text = [data.text];
+      DocumentContent.text = [utf8.encode(data.text)];
       schema.document = DocumentContent;
       schema.content = DocumentContent.text;
     }
@@ -93,11 +109,10 @@ async function getMetadata(uri, schema) {
     $("#aspect_discovery_RelatedItems_div_item-related").each((i, el) => {
       let relatedLink = $(el).find("a").attr("href");
       related_items.push(base_url + relatedLink);
-
       schema.relatedDocuments = related_items;
     });
-
-    console.log(schema.title);
+    //TODO: use update function here
+    console.log(schema);
   } catch (e) {
     console.error("error:", e);
   }

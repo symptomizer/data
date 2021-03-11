@@ -16,7 +16,8 @@
     "react": "^16.13.1",
     "react-native": "^0.63.2",
     "realm": "^10.2.0",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "utf8": "^3.0.0"
   },
   "scripts": {
     "start": "wrangler dev",
