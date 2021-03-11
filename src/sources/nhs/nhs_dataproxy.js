@@ -217,7 +217,6 @@ class NHS extends DocumentSource {
                                 "keywords": schema.keywords,
                                 "description": schema.description,
                                 "imageURLs": schema.imageURLs,
-                                "relatedDocuments": schema.relatedDocuments,
                                 "rights": schema.rights,
                                 "content": {id: DocumentContent.id, url: DocumentContent.url, text: DocumentContent.text },
                                 "type": "guidance",

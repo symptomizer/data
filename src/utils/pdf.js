@@ -1,17 +1,13 @@
-import { getDocument, PDFDocumentOutline, PDFDocumentStats } from "pdfjs-dist";
+// import { getDocument, PDFDocumentOutline, PDFDocumentStats } from "pdfjs-dist";
+const {getDocument, PDFDocumentOutline, PDFDocumentStats} = require("pdfjs-dist");
 
-type Unpromisify<T> = T extends Promise<infer U> ? U : T;
-type PromisedDocument = ReturnType<typeof getDocument>;
-type Document = Unpromisify<PromisedDocument>;
 
 class PDFTextReader {
-  document: Document;
-
-  constructor(document: Document) {
+  constructor(document) {
     this.document = document;
   }
 
-  async getPageText(pageNumber: number) {
+  async getPageText(pageNumber) {
     const page = await this.document.getPage(pageNumber);
     const textContent = await page.getTextContent();
     return textContent.items.reduce(
@@ -21,7 +17,7 @@ class PDFTextReader {
   }
 
   async getText() {
-    const pages: string[] = [];
+    const pages = [];
 
     for (let i = 1; i <= this.document.pdfInfo.numPages; i++) {
       pages.push(await this.getPageText(i));
@@ -31,14 +27,7 @@ class PDFTextReader {
   }
 }
 
-export const pdf = async (
-  response: Response
-): Promise<{
-  info: Record<string, unknown>;
-  stats: PDFDocumentStats;
-  outline: PDFDocumentOutline;
-  pages: string[];
-}> => {
+export const pdf = async (response) => {
   const buffer = new Uint8Array(await response.arrayBuffer());
   const document = await getDocument(buffer);
 

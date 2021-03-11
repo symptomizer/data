@@ -1,4 +1,4 @@
-import { DocumentSource, Document, DocumentType, NotFoundError } from "..";
+import { DocumentSource, Document, DocumentType, NotFoundError } from "../../index";
 import { getMetadata, Metadata } from "./metadata";
 import { getPDF } from "./pdf";
 
