@@ -1,7 +1,7 @@
 class DocumentHandler {
   content = "";
 
-  text(text: Text) {
+  text(text) {
     this.content += text.text;
   }
 }
@@ -12,7 +12,7 @@ class DocumentHandler {
  * **Note however, that it also includes the inner content of potentially
  * unexpected tags (e.g. <script> and <style>)
  */
-export const html = async (htmlContent: string): Promise<string> => {
+export const html = async (htmlContent) => {
   const documentHandler = new DocumentHandler();
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore

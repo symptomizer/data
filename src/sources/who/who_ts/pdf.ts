@@ -1,4 +1,4 @@
-import { WHOPDFError } from "./errors";
+import { WHOPDFError } from "../errors";
 class CitationPDFURLElementHandler {
   pdfURL: string | null = null;
 

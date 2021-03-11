@@ -1,5 +1,5 @@
-import { csv } from "../../utils/csv";
-import { WHOMetadataError } from "./errors";
+import { csv } from "../../../utils/csv";
+import { WHOMetadataError } from "../errors";
 
 class CSVExportLinkHandler {
   metadataURL: string | null = null;

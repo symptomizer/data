@@ -1,6 +1,6 @@
 import { Router } from "@glenstack/cf-workers-router";
 import { DocumentSource } from "./sources";
-import { WHO } from "./sources/who";
+import { WHO } from "./sources/who/who_ts";
 // import { handleRequest as who } from "./who";
 
 const getDocument = (source: DocumentSource) => async (request: Request) => {
