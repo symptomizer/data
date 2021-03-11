@@ -59,7 +59,7 @@ class NHS extends DocumentSource {
         try {
             let no_calls = 1;
 
-            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=true';
+            const nhs_url = 'https://api.nhs.uk/conditions/?category=' + category + '&synonyms=true&childArticles=false';
 
             let response = await this.NHSFetch(nhs_url, category, last_retrieved);
             let res = await response.json();
@@ -116,7 +116,9 @@ class NHS extends DocumentSource {
                                 } else {
                                     current_related_doc["url"] = relatedLink[i]["url"].toString()
                                 }
-                                schema.relatedDocuments.push(current_related_doc);
+                                if(!schema.relatedDocuments.includes(current_related_doc)){
+                                    schema.relatedDocuments.push(current_related_doc);
+                                }
                             } else {
                                 let new_relatedLink = relatedLink[i].relatedLink;
                                 allRelatedLinks(new_relatedLink);
@@ -339,6 +341,6 @@ class NHS extends DocumentSource {
 
 let test = new NHS();
 
-test.retrieveNHSData('z').then((result) => {
-    console.log(`Category z is complete`);
+test.retrieveNHSData('v').then((result) => {
+    console.log(`Category v is complete`);
 });
