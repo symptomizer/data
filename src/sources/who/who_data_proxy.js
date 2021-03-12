@@ -37,7 +37,7 @@ class WHO extends DocumentSource {
   url = new URL("https://apps.who.int/iris/");
 
   retrieveWHOData = async () => {
-    let getWHOData = async (uri, updateDB) => {
+    let getWHOData = async (uri, updateDB, set) => {
       const options = {
         uri: uri,
         transform: function (body) {
@@ -62,7 +62,7 @@ class WHO extends DocumentSource {
           schema.id = this.id;
           schema.url = this.url.toString();
 
-          await metadata.getMetadata(docLinks[i], schema, updateDB);
+          await metadata.getMetadata(docLinks[i], schema, updateDB, set);
         }
       } catch (e) {
         console.error("error:", e);
@@ -82,21 +82,20 @@ class WHO extends DocumentSource {
           `${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`
         );
       }
-      //TODO:initalise the database here
-      // create an update function like in the nhs_data_proxy
-      // call it updateDB
-      //this function is passed in getWHOData and getMetadata
 
-      for (let i = 3; i < 4; i++) {
+      for (let i = 3; i < 232570; i++) {
         const baseurl =
           // rpp is results per page (loading 1000 should be okay)
           // offset should increase by i * rpp each iteration
           // do this up to total number docs
-          "https://apps.who.int/iris/browse?rpp=5&offset=" +
-          (i * 5).toString() +
+          "https://apps.who.int/iris/browse?rpp=1000&offset=" +
+          (i * 1000).toString() +
           "&etal=-1&sort_by=1&type=title&starts_with_previous=&order=ASC";
         try {
-          await getWHOData(baseurl, updateDB);
+          /* The object "set" stores the final field:value pairs that will be written to mongo,
+          meaning it will ignore any null fields instead of writing them to mongo as null */
+          const set = new Object();
+          await getWHOData(baseurl, updateDB, set);
         } catch (e) {
           console.log("error fetching WHO data");
           console.error(e);

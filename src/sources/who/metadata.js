@@ -18,7 +18,7 @@ function removeDupes(list) {
   return Object.keys(unique);
 }
 
-async function getMetadata(uri, schema, updateDB) {
+async function getMetadata(uri, schema, updateDB, set) {
   const base_url = "https://apps.who.int";
   const options = {
     uri: base_url + uri,
@@ -27,10 +27,6 @@ async function getMetadata(uri, schema, updateDB) {
     },
   };
 
-  /* The object "set" stores the final field:value pairs that will be written to mongo,
-     meaning it will ignore any null fields instead of writing them to mongo as null */
-
-  const set = new Object();
   const source = new Object();
   source["id"] = "who_iris";
   source["name"] = "WHO IRIS";
@@ -128,39 +124,62 @@ async function getMetadata(uri, schema, updateDB) {
       set["description"] = schema.description;
     }
 
-    schema.isbn = metadata.dc.identifier.isbn;
-    if (schema.isbn !== undefined) {
-      set["isbn"] = schema.isbn;
-    }
+    if (metadata.dc.identifier !== undefined) {
+      schema.isbn = metadata.dc.identifier.isbn;
+      if (schema.isbn !== undefined) {
+        set["isbn"] = schema.isbn;
+      }
 
-    schema.issn = metadata.dc.identifier.issn;
-    if (schema.issn !== undefined) {
-      set["issn"] = schema.issn;
-    }
+      schema.issn = metadata.dc.identifier.issn;
+      if (schema.issn !== undefined) {
+        set["issn"] = schema.issn;
+      }
 
-    schema.doi = metadata.dc.identifier.doi;
-    if (schema.doi !== undefined) {
-      set["doi"] = schema.doi;
-    }
+      schema.doi = metadata.dc.identifier.doi;
+      if (schema.doi !== undefined) {
+        set["doi"] = schema.doi;
+      }
 
-    schema.pubMedID = metadata.dc.identifier.pubmed;
-    if (schema.pubMedID !== undefined) {
-      set["pubMedID"] = schema.pubMedID;
-    }
+      schema.pubMedID = metadata.dc.identifier.pubmed;
+      if (schema.pubMedID !== undefined) {
+        set["pubMedID"] = schema.pubMedID;
+      }
 
-    schema.pmcID = metadata.dc.identifier.pmc;
-    if (schema.pmcID !== undefined) {
-      set["pmcID"] = schema.pmcID;
+      schema.pmcID = metadata.dc.identifier.pmc;
+      if (schema.pmcID !== undefined) {
+        set["pmcID"] = schema.pmcID;
+      }
     }
 
     if (metadata["Journal title"] !== undefined) {
-      schema.journalReference = {
-        title: utf8.encode(metadata["Journal title"]),
-        volume: utf8.encode(metadata["Journal volume"]),
-        issue: utf8.encode(metadata["Journal issue"]),
-        start: utf8.encode(metadata["Journal start page"]),
-        end: utf8.encode(metadata["Journal end page"]),
-      };
+      var j_ref = new Object();
+      j_ref["title"] = utf8.encode(metadata["Journal title"]);
+
+      if (metadata["Journal volume"] !== undefined) {
+        j_ref["volume"] = utf8.encode(metadata["Journal volume"]);
+      } else {
+        j_ref["volume"] = "";
+      }
+
+      if (metadata["Journal issue"] !== undefined) {
+        j_ref["issue"] = utf8.encode(metadata["Journal issue"]);
+      } else {
+        j_ref["issue"] = "";
+      }
+
+      if (metadata["Journal start page"] !== undefined) {
+        j_ref["start"] = utf8.encode(metadata["Journal start page"]);
+      } else {
+        j_ref["start"] = "";
+      }
+
+      if (metadata["Journal end page"] !== undefined) {
+        j_ref["end"] = utf8.encode(metadata["Journal end page"]);
+      } else {
+        j_ref["end"] = "";
+      }
+
+      schema.journalReference = j_ref;
       set["journalReference"] = schema.journalReference;
     }
 
@@ -186,8 +205,8 @@ async function getMetadata(uri, schema, updateDB) {
     }
 
     if (metadata["Language"] !== undefined) {
-      schema.language = metadata["Language"].split("||")[0];
-      set["language"] = utf8.encode(schema.language);
+      schema.language = metadata["Language"].split("||");
+      set["language"] = utf8.encode(schema.language.join(" and "));
     }
     schema.type = mapType();
     set["type"] = schema.type;
@@ -205,7 +224,9 @@ async function getMetadata(uri, schema, updateDB) {
       var thumbnail = new Object();
 
       // Add filename to schema.fileName
-      const fn = $(".item-page-field-wrapper").find("a").text();
+      const fn = $(".item-page-field-wrapper.table.word-break")
+        .find("a")
+        .text();
       schema.fileName = utf8.encode(fn);
       set["fileName"] = schema.fileName;
 
@@ -241,7 +262,7 @@ async function getMetadata(uri, schema, updateDB) {
       set["content"] = content;
     }
     const related_items = [];
-    $("#aspect_discovery_RelatedItems_div_item-related").each((i, el) => {
+    $("ul.ds-artifact-list.list-unstyled").each((i, el) => {
       let relatedLink = $(el).find("a").attr("href");
       let relatedName = $(el).find("a").text();
 
@@ -258,13 +279,14 @@ async function getMetadata(uri, schema, updateDB) {
       set["relatedDocuments"] = schema.relatedDocuments;
     }
     //update docs on mongo
-    let updateFilter = { directURL: schema.directURL };
-    let updateDoc = { $set: set };
-    await updateDB(updateFilter, updateDoc, { upsert: true });
+    await updateDB(
+      { directURL: schema.directURL },
+      { $set: set },
+      { upsert: true }
+    );
     console.log(set);
   } catch (e) {
     console.error("error:", e);
   }
 }
-// getMetadata('/iris/handle/10665/39365', new Document())
 module.exports = { getMetadata };
