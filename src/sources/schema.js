@@ -1,10 +1,18 @@
-// used in Document Schema
+// used in content
 let DocumentContent = {
   // currently saved as page url
   id: this.id,
   url: this.url,
   // array of strings text[0] is the header of the section (if it exists, empty string if not)
   text: this.text,
+};
+
+// used in imgageURLS for WHO
+let Thumbnail = {
+  url: this.url,
+  description: this.description,
+  provider: this.provider,
+  license: this.license,
 };
 
 class Document {
@@ -17,7 +25,6 @@ class Document {
     alternateTitle,
     fileName,
     authors,
-    logo,
     datePublished,
     dateReviewed,
     dateModified,
@@ -77,7 +84,6 @@ class Document {
   }
 }
 class DocumentSource {
-  // class with information about NHS API (document sources)
   constructor(id, name, description, url) {
     this.id = id;
     this.name = name;
