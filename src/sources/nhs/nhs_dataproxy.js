@@ -256,6 +256,7 @@ class NHS extends DocumentSource {
                   description:
                     "Complete guide to conditions, symptoms and treatments from the NHS (including what to do and when to get help)",
                 },
+                rrelatedDocuments: schema.relatedDocuments,
               },
             };
 

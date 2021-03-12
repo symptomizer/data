@@ -1,7 +1,7 @@
 const cheerio = require("cheerio");
 const csv = require("csvtojson");
 const request = require("request");
-const { DocumentContent, Document, Thumbnail } = require("../schema");
+const { DocumentContent, Document } = require("../schema");
 const pdfparse = require("pdf-parse");
 const fetch = require("node-fetch");
 const ObjectID = require("bson").ObjectID;
@@ -26,6 +26,18 @@ async function getMetadata(uri, schema, updateDB) {
       return cheerio.load(body);
     },
   };
+
+  /* The object "set" stores the final field:value pairs that will be written to mongo,
+     meaning it will ignore any null fields instead of writing them to mongo as null */
+
+  const set = new Object();
+  const source = new Object();
+  source["id"] = "who_iris";
+  source["name"] = "WHO IRIS";
+  source["description"] =
+    "World Health Organization's Institutional Repository for Information Sharing";
+  set["source"] = source;
+
   function metadata2schema(metadata, csvURL) {
     const mapType = () => {
       switch (metadata["Type"]) {
@@ -46,9 +58,12 @@ async function getMetadata(uri, schema, updateDB) {
       }
     };
     schema.id = metadata["id"];
-    schema.url = uri;
+    schema.url = base_url + uri;
+    set["url"] = schema.url.toString();
     schema.directURL = csvURL;
+    set["directURL"] = schema.directURL.toString();
     schema.title = metadata["Title"];
+    set["title"] = utf8.encode(schema.title);
 
     if (metadata["Authors"] !== undefined) {
       var authors = [];
@@ -56,7 +71,7 @@ async function getMetadata(uri, schema, updateDB) {
 
       for (var i = 0; i < authorNames.length; i++) {
         var curr_author = new Object();
-        curr_author["name"] = authorNames[i];
+        curr_author["name"] = utf8.encode(authorNames[i]);
         curr_author["email"] = "";
         curr_author["url"] = "";
 
@@ -64,13 +79,22 @@ async function getMetadata(uri, schema, updateDB) {
       }
 
       schema.authors = authors;
+      set["authors"] = schema.authors;
     }
-    if (metadata["Variant title"] != undefined) {
-      schema.alternateTitle = [metadata["Variant title"]];
+    if (metadata["Variant title"] !== undefined) {
+      schema.alternateTitle = metadata["Variant title"];
+      set["alternateTitle"] = [utf8.encode(schema.alternateTitle)];
     }
-    schema.datePublished = metadata["Date"];
-    schema.dateReviewed = new Date(metadata.dc.date.accessioned);
+    if (metadata["Date"] !== undefined) {
+      schema.datePublished = metadata["Date"];
+      set["datePublished"] = new Date(schema.datePublished);
+    }
+    if (metadata.dc.date.accessioned !== undefined) {
+      schema.dateReviewed = new Date(metadata.dc.date.accessioned);
+      set["dateReviewed"] = schema.dateReviewed;
+    }
     schema.dateIndexed = new Date();
+    set["dateIndexed"] = schema.dateIndexed;
 
     // Remove duplicates from keywords and ensure every word is utf8 encoded
     if (metadata["Subject or keywords"] !== undefined) {
@@ -82,16 +106,53 @@ async function getMetadata(uri, schema, updateDB) {
         utf8_keywords.push(utf8.encode(e));
       });
       schema.keywords = utf8_keywords;
+      set["keywords"] = utf8_keywords;
     }
-    schema.description = metadata.Abstract;
+
+    var desc = "";
+
     if (metadata.Description !== undefined) {
-      schema.alternateDescription = metadata.Description.split("||");
+      var descs = metadata.Description.split("||");
+      desc = utf8.encode(descs.join(" "));
     }
+
+    if (metadata.Abstract !== undefined) {
+      schema.description = utf8.encode(metadata.Abstract);
+      set["description"] = schema.description;
+      if (metadata.Description !== undefined) {
+        schema.alternateDescription = desc;
+        set["alternateDescription"] = schema.alternateDescription;
+      }
+    } else if (metadata.Description !== undefined) {
+      schema.description = desc;
+      set["description"] = schema.description;
+    }
+
     schema.isbn = metadata.dc.identifier.isbn;
+    if (schema.isbn !== undefined) {
+      set["isbn"] = schema.isbn;
+    }
+
     schema.issn = metadata.dc.identifier.issn;
+    if (schema.issn !== undefined) {
+      set["issn"] = schema.issn;
+    }
+
     schema.doi = metadata.dc.identifier.doi;
+    if (schema.doi !== undefined) {
+      set["doi"] = schema.doi;
+    }
+
     schema.pubMedID = metadata.dc.identifier.pubmed;
+    if (schema.pubMedID !== undefined) {
+      set["pubMedID"] = schema.pubMedID;
+    }
+
     schema.pmcID = metadata.dc.identifier.pmc;
+    if (schema.pmcID !== undefined) {
+      set["pmcID"] = schema.pmcID;
+    }
+
     if (metadata["Journal title"] !== undefined) {
       schema.journalReference = {
         title: utf8.encode(metadata["Journal title"]),
@@ -100,33 +161,36 @@ async function getMetadata(uri, schema, updateDB) {
         start: utf8.encode(metadata["Journal start page"]),
         end: utf8.encode(metadata["Journal end page"]),
       };
-    } else {
-      schema.journalReference = {};
+      set["journalReference"] = schema.journalReference;
     }
 
     if (metadata["MeSH Headings"] !== undefined) {
       schema.meshHeadings = removeDupes(
         (metadata["MeSH Headings"] || "").split("::").join("||").split("||")
       );
+      set["meshHeadings"] = schema.meshHeadings;
     }
     if (metadata["MeSH qualifiers"] !== undefined) {
       schema.meshQualifiers = removeDupes(
         (metadata["MeSH qualifiers"] || "").split("::").join("||").split("||")
       );
+      set["meshQualifiers"] = schema.meshQualifiers;
     }
     if (metadata["Publisher"] !== undefined) {
-      schema.publisher = metadata["Publisher"].split("||");
+      schema.publisher = removeDupes(metadata["Publisher"].split("||"));
+      set["publisher"] = utf8.encode(schema.publisher.join(" and "));
     }
     if (metadata["Rights"] !== undefined) {
       schema.rights = utf8.encode(metadata["Rights"]);
-    } else {
-      schema.rights = "";
+      set["rights"] = schema.rights;
     }
 
     if (metadata["Language"] !== undefined) {
-      schema.language = metadata["Language"].split("||");
+      schema.language = metadata["Language"].split("||")[0];
+      set["language"] = utf8.encode(schema.language);
     }
     schema.type = mapType();
+    set["type"] = schema.type;
   }
 
   try {
@@ -138,23 +202,27 @@ async function getMetadata(uri, schema, updateDB) {
     DocumentContent.id = new ObjectID();
     const pdfURL = $(".item-page-field-wrapper").find("a").attr("href");
     if (pdfURL !== undefined) {
+      var thumbnail = new Object();
+
       // Add filename to schema.fileName
-      const fn = $(".item-page-field-wrapper").find("a").attr("#text");
-      schema.fileName = fn;
+      const fn = $(".item-page-field-wrapper").find("a").text();
+      schema.fileName = utf8.encode(fn);
+      set["fileName"] = schema.fileName;
 
       // Add pdf thumbnail to schema.imageURLs
       const pdf_img = $(".thumbnail").find("img").attr("src");
       const pdf_alt = $(".thumbnail").find("img").attr("alt");
 
-      Thumbnail.url = pdf_img;
-      Thumbnail.description = pdf_alt;
-      if (schema.publisher !== undefined) {
-        Thumbnail.provider = schema.publisher;
+      thumbnail["url"] = pdf_img;
+      thumbnail["description"] = utf8.encode(pdf_alt);
+      if (set["publisher"] !== undefined) {
+        thumbnail["provider"] = set["publisher"];
       } else {
-        Thumbnail.provider = "";
+        thumbnail["provider"] = "";
       }
-      Thumbnail.license = "";
-      schema.imageURLs = Thumbnail;
+      thumbnail["license"] = "";
+      schema.imageURLs = [thumbnail];
+      set["imageURLs"] = schema.imageURLs;
 
       const full_pdfURL = "https://apps.who.int" + pdfURL;
       DocumentContent.url = full_pdfURL;
@@ -164,11 +232,18 @@ async function getMetadata(uri, schema, updateDB) {
       DocumentContent.text = [utf8.encode(data.text)];
       schema.document = DocumentContent;
       schema.content = DocumentContent.text;
+
+      var content = new Object();
+      content["id"] = DocumentContent.id;
+      content["url"] = DocumentContent.url;
+      content["text"] = DocumentContent.text;
+
+      set["content"] = content;
     }
     const related_items = [];
     $("#aspect_discovery_RelatedItems_div_item-related").each((i, el) => {
       let relatedLink = $(el).find("a").attr("href");
-      let relatedName = $(el).find("a").attr("#text");
+      let relatedName = $(el).find("a").text();
 
       if (relatedLink !== undefined) {
         var current_related_doc = new Object();
@@ -178,49 +253,15 @@ async function getMetadata(uri, schema, updateDB) {
       }
     });
 
-    schema.relatedDocuments = removeDupes(related_items);
-
+    if (related_items.length !== 0) {
+      schema.relatedDocuments = related_items;
+      set["relatedDocuments"] = schema.relatedDocuments;
+    }
     //update docs on mongo
     let updateFilter = { directURL: schema.directURL };
-    let updateDoc = {
-      $set: {
-        url: schema.url.toString(),
-        directURL: schema.directURL.toString(),
-        title: utf8.encode(schema.title),
-        alternateTitle: utf8.encode(alternateTitle),
-        fileName: utf8.encode(schema.fileName),
-        authors: schema.authors,
-        datePublished: new Date(schema.datePublished),
-        dateReviewed: schema.dateReviewed,
-        dateIndexed: new Date(),
-        keywords: schema.keywords,
-        description: schema.description,
-        imageURLs: schema.imageURLs,
-        isbn: schema.isbn,
-        issn: schema.issn,
-        doi: schema.doi,
-        pubMedID: schema.pubMedID,
-        pmcID: schema.pmcID,
-        relatedDocuments: schema.relatedDocuments,
-        journalReference: schema.journalReference,
-        rights: schema.rights,
-        language: schema.language,
-        content: {
-          id: DocumentContent.id,
-          url: DocumentContent.url,
-          text: DocumentContent.text,
-        },
-        type: schema.type,
-        source: {
-          id: "who_iris",
-          name: "WHO IRIS",
-          description:
-            "World Health Organization's Institutional Repository for Information Sharing",
-        },
-      },
-    };
+    let updateDoc = { $set: set };
     await updateDB(updateFilter, updateDoc, { upsert: true });
-    console.log(schema);
+    console.log(set);
   } catch (e) {
     console.error("error:", e);
   }

@@ -96,7 +96,7 @@ class WHO extends DocumentSource {
           (i * 5).toString() +
           "&etal=-1&sort_by=1&type=title&starts_with_previous=&order=ASC";
         try {
-          await getWHOData(baseurl);
+          await getWHOData(baseurl, updateDB);
         } catch (e) {
           console.log("error fetching WHO data");
           console.error(e);
