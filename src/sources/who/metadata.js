@@ -208,7 +208,12 @@ async function getMetadata(uri, schema, updateDB, set) {
       schema.language = metadata["Language"].split("||");
       set["language"] = utf8.encode(schema.language.join(" and "));
     }
-    schema.type = mapType();
+
+    if (metadata["Type"] !== undefined) {
+      schema.type = mapType();
+    } else {
+      schema.type = "UNKNOWN";
+    }
     set["type"] = schema.type;
   }
 
@@ -249,7 +254,8 @@ async function getMetadata(uri, schema, updateDB, set) {
       DocumentContent.url = full_pdfURL;
       const response = await fetch(full_pdfURL);
       const pdfFile = await response.arrayBuffer();
-      const data = await pdfparse(pdfFile);
+
+      const data = await pdfparse(pdfFile, { max: 6 });
       DocumentContent.text = [utf8.encode(data.text)];
       schema.document = DocumentContent;
       schema.content = DocumentContent.text;

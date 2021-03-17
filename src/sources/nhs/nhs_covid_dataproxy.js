@@ -4,7 +4,7 @@ const { ONE_WEEK } = require("./constants");
 const fs = require("fs");
 const NHS_API_KEY = fs.readFileSync("NHS_API_KEY.txt");
 const mongo_pass = fs.readFileSync("../mongo_pass.txt");
-const last_retrieved = fs.readFileSync("lastRetrieved.txt");
+const last_retrieved = fs.readFileSync("lastRetrievedCovid.txt");
 const ObjectID = require("bson").ObjectID;
 
 const MongoClient = require("mongodb").MongoClient;
@@ -28,24 +28,23 @@ function setLastRetrieved() {
 
   let date = yyyy + "-" + mm + "-" + dd;
 
-  fs.writeFile("lastRetrieved.txt", date, (err) => {
+  fs.writeFile("lastRetrievedCovid.txt", date, (err) => {
     // In case of a error throw err.
     if (err) throw err;
   });
 }
 
-class NHS extends DocumentSource {
+class NHS_COVID extends DocumentSource {
   id = "nhs";
   name = "NHS A-Z";
   description = "The NHS Health A-Z";
-  url = new URL("https://www.nhs.uk/conditions/");
+  url = new URL("https://www.nhs.uk/conditions/coronavirus-covid-19");
   // fetch function with headers and cache filled out
-  NHSFetch = async (url, category, last_retrieved) => {
+  NHSCovidFetch = async (url, last_retrieved) => {
     return await fetch(url, {
       headers: {
         "subscription-key": NHS_API_KEY,
-        synonyms: "true",
-        childArticles: "true",
+
         //uncomment following when updating
         //"startDate":last_retrieved,
         //"orderBy":"dateModified"
@@ -57,19 +56,16 @@ class NHS extends DocumentSource {
     });
   };
 
-  retrieveNHSData = async (category) => {
+  retrieveNHSData = async () => {
     try {
       let no_calls = 1;
 
-      const nhs_url =
-        "https://api.nhs.uk/conditions/?category=" +
-        category +
-        "&synonyms=true&childArticles=false";
+      const nhs_url = "https://api.nhs.uk/conditions/coronavirus-covid-19";
 
-      let response = await this.NHSFetch(nhs_url, category, last_retrieved);
+      let response = await this.NHSCovidFetch(nhs_url, last_retrieved);
       let res = await response.json();
 
-      const results = res.significantLink;
+      const results = res.hasPart;
       const no_results = Object.keys(results).length;
 
       try {
@@ -89,20 +85,18 @@ class NHS extends DocumentSource {
 
         //function to get all schema data from all pages
         let iterate_pages = async (json_res, schema) => {
-          schema.authors = [
-            {
-              url: json_res.author.url.toString(),
-              name: json_res.author.name,
-              email: json_res.author.email.toString(),
-            },
-          ];
+          schema.authors = {
+            url: json_res.author.url.toString(),
+            name: json_res.author.name,
+            email: json_res.author.email.toString(),
+          };
           schema.rights = json_res.license;
           schema.directURL = json_res.url;
           schema.description = json_res.description;
           schema.title = json_res.name;
           schema.logo = json_res.author.logo;
           schema.dateIndexed = new Date();
-          schema.source = "NHS Health A-Z";
+          schema.source = "NHS Medicines A-Z";
           schema.dateModified = json_res.dateModified;
           schema.imageURLs = [];
           schema.relatedDocuments = [];
@@ -142,7 +136,7 @@ class NHS extends DocumentSource {
             allRelatedLinks(json_res.relatedLink);
           }
 
-          if (json_res["@type"] === "MedicalCondition") {
+          if (json_res["@type"] === "MedicalWebPage") {
             if (json_res.lastReviewed !== undefined) {
               schema.dateReviewed = json_res.lastReviewed[0];
             }
@@ -228,7 +222,7 @@ class NHS extends DocumentSource {
             schema.document = DocumentContent;
             console.log(schema.directURL + "\nsuccessfully fetched");
 
-            //update docs on mongo
+            //add doc to schema
             let updateFilter = { directURL: schema.directURL };
             let updateDoc = {
               $set: {
@@ -236,12 +230,13 @@ class NHS extends DocumentSource {
                 directURL: schema.directURL.toString(),
                 title: schema.title,
                 alternateTitle: schema.alternateTitle,
-                authors: schema.authors,
+                authors: [schema.authors],
                 datePublished: new Date(schema.datePublished),
                 dateIndexed: new Date(),
                 keywords: schema.keywords,
                 description: schema.description,
                 imageURLs: schema.imageURLs,
+                relatedDocuments: schema.relatedDocuments,
                 rights: schema.rights,
                 content: {
                   id: DocumentContent.id,
@@ -249,14 +244,12 @@ class NHS extends DocumentSource {
                   text: DocumentContent.text,
                 },
                 type: "guidance",
-                language: "en",
                 source: {
                   id: "nhs_az",
                   name: "NHS Health A to Z",
                   description:
                     "Complete guide to conditions, symptoms and treatments from the NHS (including what to do and when to get help)",
                 },
-                rrelatedDocuments: schema.relatedDocuments,
               },
             };
 
@@ -277,7 +270,7 @@ class NHS extends DocumentSource {
                     }
                     let new_url = mainEntity[i].url;
 
-                    let condition_response = await this.NHSFetch(new_url);
+                    let condition_response = await this.NHSMedFetch(new_url);
                     let condition_res = await condition_response.json();
                     let schema = new Document();
                     schema.id = this.id;
@@ -344,7 +337,7 @@ class NHS extends DocumentSource {
               await sleep(ONE_MINUTE);
             }
 
-            let condition_response = await this.NHSFetch(condition_url);
+            let condition_response = await this.NHSMedFetch(condition_url);
             let condition_res = await condition_response.json();
             await iterate_pages(condition_res, schema);
           } catch (e) {
@@ -367,8 +360,7 @@ class NHS extends DocumentSource {
   };
 }
 
-let test = new NHS();
-
-test.retrieveNHSData("g").then((result) => {
-  console.log(`Category g is complete`);
+let test = new NHS_COVID();
+test.retrieveNHSData().then((result) => {
+  console.log(`Covid is complete`);
 });

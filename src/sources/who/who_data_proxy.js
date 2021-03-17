@@ -83,13 +83,10 @@ class WHO extends DocumentSource {
         );
       }
 
-      for (let i = 3; i < 232570; i++) {
+      for (let i = 161000; i < 171000; i += 1000) {
         const baseurl =
-          // rpp is results per page (loading 1000 should be okay)
-          // offset should increase by i * rpp each iteration
-          // do this up to total number docs
           "https://apps.who.int/iris/browse?rpp=1000&offset=" +
-          (i * 1000).toString() +
+          i.toString() +
           "&etal=-1&sort_by=1&type=title&starts_with_previous=&order=ASC";
         try {
           /* The object "set" stores the final field:value pairs that will be written to mongo,
