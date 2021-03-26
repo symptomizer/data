@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
-const request = require("request-promise");
 const fs = require("fs");
 const mongo_pass = fs.readFileSync("../mongo_pass.txt");
+const play_session = fs.readFileSync("play_session.txt");
 const ObjectID = require("bson").ObjectID;
 
 const MongoClient = require("mongodb").MongoClient;
@@ -10,9 +10,6 @@ const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
-
-const play_session =
-  "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InBhYzRqU2Vzc2lvbklkIjoiMTYyOTE1M2EtNjE2Yy00ODA3LTllNTQtNTcwZGVjNjI5ZjNlIn0sIm5iZiI6MTYxNjc3NjMxMCwiaWF0IjoxNjE2Nzc2MzEwfQ.06eyXaRGrlTnUWNyC5rfK08j76XylyTWUr8-v7KlHUo";
 
 const browse_url =
   "https://www.medicinescomplete.com/api/browse/bnf/drugs/name-";
