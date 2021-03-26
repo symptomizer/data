@@ -12,7 +12,7 @@ const client = new MongoClient(uri, {
 });
 
 const browse_url =
-  "https://www.medicinescomplete.com/api/browse/bnf/drugs/name-";
+  "https://www.medicinescomplete.com/api/browse/bnf/treatmentSummaries/condition-";
 
 const opts = {
   headers: {
@@ -22,7 +22,7 @@ const opts = {
 
 async function get_BNF(url) {
   try {
-    // const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+    // const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y", "Z"]
     const alphabet = ["A"];
 
     const all_links = new Object();
@@ -72,10 +72,10 @@ async function getData(all_links) {
 
         const schema = new Object();
 
-        schema["url"] = "https://bnf.nice.org.uk/drug";
+        schema["url"] = "https://bnf.nice.org.uk/treatment-summary/";
         schema["directURL"] = link;
         schema["title"] = title;
-        schema["type"] = "PUBLICATION";
+        schema["type"] = "GUIDANCE";
         schema["language"] = "en";
         schema["rights"] = "Medicines Complete";
         schema["dateIndexed"] = new Date();
@@ -107,7 +107,6 @@ async function getData(all_links) {
         let updateDoc = { $set: schema };
         let options = { upsert: true };
 
-        // console.log(schema);
         await update(updateFilter, updateDoc, options);
       }
     } catch (error) {
