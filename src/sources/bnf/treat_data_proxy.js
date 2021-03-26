@@ -81,7 +81,7 @@ async function getData(all_links) {
         schema["rights"] = "Medicines Complete";
         schema["dateIndexed"] = new Date();
 
-        var author = new ObjectID();
+        var author = new Object();
         author["name"] = "National Institute for Health and Care Excellence";
         author["url"] = "https://www.nice.org.uk/";
         author["email"] = "nice@nice.org.uk";
