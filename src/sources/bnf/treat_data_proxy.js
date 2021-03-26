@@ -6,6 +6,7 @@ const ObjectID = require("bson").ObjectID;
 
 const MongoClient = require("mongodb").MongoClient;
 const uri = `mongodb+srv://main_admin:${mongo_pass}@cluster1.xo9vl.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
