@@ -24,7 +24,6 @@ const opts = {
 async function get_BNF(url) {
   try {
     const alphabet = [
-      "A",
       "B",
       "C",
       "D",
