@@ -23,8 +23,33 @@ const opts = {
 
 async function get_BNF(url) {
   try {
-    // const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y", "Z"]
-    const alphabet = ["A"];
+    const alphabet = [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "Y",
+      "Z",
+    ];
+    // const alphabet = ["A"];
 
     const all_links = new Object();
 
@@ -66,6 +91,7 @@ async function getData(all_links) {
       );
     }
     try {
+      const all_docs = new Array();
       for (const [title, link] of Object.entries(all_links)) {
         const response = await fetch(link, opts);
         const json = await response.json();
@@ -103,12 +129,19 @@ async function getData(all_links) {
         content["text"] = curr_content.body.split("\n");
         schema["content"] = content;
 
-        //update docs on mongo
-        let updateFilter = { directURL: link };
-        let updateDoc = { $set: schema };
+        all_docs.push(schema);
+      }
+      console.log(
+        `retrieved all ${all_docs.length} docs. Now uploading to Mongo.`
+      );
+      //update docs on mongo
+      for (doc of all_docs) {
+        let updateFilter = { directURL: doc["directURL"] };
+        let updateDoc = { $set: doc };
         let options = { upsert: true };
 
         await update(updateFilter, updateDoc, options);
+        console.log(doc);
       }
     } catch (error) {
       console.log(error);
