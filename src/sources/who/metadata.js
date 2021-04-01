@@ -22,6 +22,7 @@ async function getMetadata(uri, schema, updateDB, set) {
   const base_url = "https://apps.who.int";
   const options = {
     uri: base_url + uri,
+    headers: { 'User-Agent': 'a' },
     transform: function (body) {
       return cheerio.load(body);
     },
