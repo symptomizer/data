@@ -40,6 +40,7 @@ class WHO extends DocumentSource {
     let getWHOData = async (uri, updateDB, set) => {
       const options = {
         uri: uri,
+        headers: { 'User-Agent': 'a' },
         transform: function (body) {
           return cheerio.load(body);
         },
