@@ -221,7 +221,7 @@ async function getMetadata(uri, schema, updateDB, set) {
   try {
     const $ = await rp(options);
     const csvURL = $(".export-format").find("a").attr("href");
-    const jsonarray = await csv().fromStream(request.get(csvURL));
+    const jsonarray = await csv().fromStream(request.get(csvURL, { headers: { 'User-Agent': 'a' } }));
     const metadata = jsonarray[0];
     metadata2schema(metadata, csvURL);
     DocumentContent.id = new ObjectID();
